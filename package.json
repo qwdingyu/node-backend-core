@@ -1,6 +1,6 @@
 {
   "name": "@usethink/node-backend-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Node.js 后端核心功能库",
   "main": "index.js",
   "scripts": {
