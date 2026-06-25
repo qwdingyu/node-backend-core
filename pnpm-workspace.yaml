@@ -1,0 +1,4 @@
+allowBuilds:
+  bcrypt: true
+minimumReleaseAgeExclude:
+  - '@usethink/publish-toolkit@0.1.8'

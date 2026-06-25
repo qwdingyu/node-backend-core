@@ -78,7 +78,8 @@ jobs:
       - name: Install dependencies
         run: |
           unset NPM_CONFIG_USERCONFIG
-          npm install
+          pnpm install --no-frozen-lockfile
+          pnpm approve-builds
 
       - name: Run tests
         run: npm test
