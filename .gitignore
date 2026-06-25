@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# macOS system files
+.DS_Store
+
 # Lock files（保留 package-lock.json 用于 CI）
 # pnpm-lock.yaml
 # package-lock.json
@@ -31,6 +34,10 @@ jspm_packages/
 
 # Optional eslint cache
 .eslintcache
+
+# Build artifacts（混淆/打包输出）
+dist/
+.publish-temp/
 
 # Microbundle cache
 .rpt2_cache/

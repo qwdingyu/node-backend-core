@@ -7,7 +7,11 @@
     "test": "node src/testing/utils/runTests.js",
     "test:response": "node tests/unit/response-formatter.test.js",
     "lint": "echo \"No lint yet\"",
-    "generate": "node bin/generate.js"
+    "generate": "node bin/generate.js",
+    "build:obfuscate": "node scripts/obfuscate.mjs",
+    "build:obfuscate:light": "node scripts/obfuscate.mjs --level light",
+    "build:obfuscate:aggressive": "node scripts/obfuscate.mjs --level aggressive",
+    "prepare:obfuscated:publish": "node scripts/prepare-obfuscated-publish.mjs"
   },
   "bin": {
     "jt-generate": "./bin/generate.js"
@@ -23,6 +27,10 @@
   "peerDependencies": {
     "express": "^5.1.0",
     "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "@usethink/publish-toolkit": "^0.1.5",
+    "javascript-obfuscator": "^4.1.0"
   },
   "files": [
     "src/",

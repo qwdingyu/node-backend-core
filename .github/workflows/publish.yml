@@ -32,6 +32,15 @@ on:
         description: 'dist-tag（正式版用 latest，beta 用 beta）'
         type: string
         default: latest
+      # 混淆开关：仅闭源/商业场景推荐开启，开源场景建议保持 false
+      obfuscate:
+        description: '混淆源码后发布（保护商业逻辑）'
+        type: boolean
+        default: false
+      obfuscation_level:
+        description: '混淆强度（light/standard/aggressive）'
+        type: string
+        default: standard
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -71,25 +80,75 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Publish to npm
+      - name: Obfuscate code
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.obfuscate }}
         run: |
+          echo "🔒 混淆模式: ${{ inputs.obfuscation_level }}"
+          npm run build:obfuscate -- --level=${{ inputs.obfuscation_level }}
+
+      - name: Prepare obfuscated publish package
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.obfuscate }}
+        run: npm run prepare:obfuscated:publish
+
+      - name: Publish to npm
+        id: publish
+        continue-on-error: true
+        run: |
+          PUBLISH_TAG="latest"
+          PUBLISH_DIR="."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PUBLISH_TAG="${{ inputs.tag }}"
+            if [ "${{ inputs.obfuscate }}" = "true" ]; then
+              PUBLISH_DIR=".publish-temp"
+            fi
+          fi
+
+          # 使用 publish-toolkit 统一发布流程
+          PUBLISH_ARGS="--registry=https://registry.npmjs.org/ --verbose"
+          if [ "$PUBLISH_DIR" != "." ]; then
+            PUBLISH_ARGS="$PUBLISH_ARGS --package=$PUBLISH_DIR"
+          fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ "${{ inputs.dry_run }}" = "true" ]; then
               echo "🧪 Dry-run 模式..."
-              npm publish --dry-run --access public --tag=${{ inputs.tag }}
+              npx publish-toolkit publish $PUBLISH_ARGS --dry-run --tag="$PUBLISH_TAG"
+              echo "dry_run=true" >> $GITHUB_OUTPUT
             else
-              echo "🚀 手动触发正式发布..."
-              npm publish --access public --tag=${{ inputs.tag }}
+              echo "🚀 手动触发正式发布 (tag: $PUBLISH_TAG)..."
+              npx publish-toolkit publish $PUBLISH_ARGS --tag="$PUBLISH_TAG"
+              echo "dry_run=false" >> $GITHUB_OUTPUT
             fi
           else
             echo "🚀 Tag 触发自动发布: ${{ github.ref_name }}"
-            npm publish --access public --tag=latest
+            npx publish-toolkit publish $PUBLISH_ARGS --tag=latest
+            echo "dry_run=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Display publish result
-        if: success()
+        if: always()
         run: |
           PACKAGE_NAME=$(node -p "require('./package.json').name")
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "✅ ${PACKAGE_NAME}@${PACKAGE_VERSION} 发布成功！"
-          echo "   查看: https://www.npmjs.com/package/${PACKAGE_NAME}"
+          
+          if [ "${{ steps.publish.outcome }}" = "success" ]; then
+            if [ "${{ steps.publish.output.dry_run }}" = "true" ]; then
+              echo "🧪 Dry-run 成功！"
+              echo "   包: ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+              echo "   查看: https://www.npmjs.com/package/${PACKAGE_NAME}"
+            else
+              echo "✅ ${PACKAGE_NAME}@${PACKAGE_VERSION} 发布成功！"
+              echo "   查看: https://www.npmjs.com/package/${PACKAGE_NAME}"
+            fi
+          else
+            echo "❌ 发布失败，请检查上方日志"
+            exit 1
+          fi
+
+      # 无论发布成功与否，都清理临时发布目录，保持工作区可重复
+      - name: Cleanup obfuscated publish temp dir
+        if: always()
+        run: |
+          if [ -d .publish-temp ]; then
+            rm -rf .publish-temp
+            echo "♻️ .publish-temp 已清理"
+          fi
