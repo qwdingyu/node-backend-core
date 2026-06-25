@@ -29,7 +29,7 @@
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
-    "@usethink/publish-toolkit": "^0.1.5",
+    "@usethink/publish-toolkit": "^0.1.8",
     "javascript-obfuscator": "^4.1.0"
   },
   "files": [
