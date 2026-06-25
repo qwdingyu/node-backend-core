@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: |
           unset NPM_CONFIG_USERCONFIG
-          pnpm install --no-frozen-lockfile
+          pnpm install --no-frozen-lockfile --config.minimum-release-age=0
           pnpm approve-builds
 
       - name: Run tests
