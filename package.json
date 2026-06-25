@@ -1,0 +1,46 @@
+{
+  "name": "@usethink/node-backend-core",
+  "version": "1.0.0",
+  "description": "Node.js 后端核心功能库",
+  "main": "index.js",
+  "scripts": {
+    "test": "node src/testing/utils/runTests.js",
+    "test:response": "node tests/unit/response-formatter.test.js",
+    "lint": "echo \"No lint yet\"",
+    "generate": "node bin/generate.js"
+  },
+  "bin": {
+    "jt-generate": "./bin/generate.js"
+  },
+  "keywords": [
+    "backend",
+    "core",
+    "express",
+    "nodejs"
+  ],
+  "author": "Backend Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "express": "^5.1.0",
+    "sequelize": "^6.37.7"
+  },
+  "files": [
+    "src/",
+    "index.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "decimal.js": "^10.6.0",
+    "dotenv": "^16.5.0",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
+    "winston": "^3.17.0"
+  }
+}

@@ -1,0 +1,95 @@
+# ============================================================================
+# @usethink/node-backend-core — npm 包自动发布 Workflow
+# ============================================================================
+#
+# 触发方式（两种）：
+#   1. 推送 git tag（推荐日常使用）
+#        git tag v1.0.1 && git push origin v1.0.1
+#
+#   2. GitHub UI 手动触发（应急兜底）
+#        仓库 → Actions → Publish → Run workflow
+#
+# 前置条件：
+#   NPM_TOKEN 通过 scripts/setup-github-secrets.sh 一键配置
+# ============================================================================
+
+name: Publish
+
+on:
+  # ---- 方式一：推送 tag 时自动发布 ----
+  push:
+    tags:
+      - 'v*'
+
+  # ---- 方式二：在 GitHub UI 中手动触发 ----
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run 模式（只预览，不实际发布）'
+        type: boolean
+        default: false
+      tag:
+        description: 'dist-tag（正式版用 latest，beta 用 beta）'
+        type: string
+        default: latest
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify tools
+        run: |
+          node --version
+          npm --version
+
+      # 直接使用 npm 安装依赖，避免 pnpm 在 CI 中的各种兼容问题
+      - name: Install dependencies
+        run: |
+          unset NPM_CONFIG_USERCONFIG
+          npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to npm
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "🧪 Dry-run 模式..."
+              npm publish --dry-run --tag=${{ inputs.tag }}
+            else
+              echo "🚀 手动触发正式发布..."
+              npm publish --tag=${{ inputs.tag }}
+            fi
+          else
+            echo "🚀 Tag 触发自动发布: ${{ github.ref_name }}"
+            npm publish --tag=latest
+          fi
+
+      - name: Display publish result
+        if: success()
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "✅ ${PACKAGE_NAME}@${PACKAGE_VERSION} 发布成功！"
+          echo "   查看: https://www.npmjs.com/package/${PACKAGE_NAME}"
