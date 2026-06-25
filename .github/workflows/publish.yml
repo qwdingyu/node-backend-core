@@ -73,6 +73,7 @@ jobs:
         run: |
           node --version
           npm --version
+          pnpm --version
 
       # 直接使用 npm 安装依赖，避免 pnpm 在 CI 中的各种兼容问题
       - name: Install dependencies
@@ -97,6 +98,10 @@ jobs:
       - name: Publish to npm
         id: publish
         continue-on-error: true
+        env:
+          # 禁用 pnpm 的 dependency status check，避免在 exec/publish 前重复触发 lockfile 验证
+          # Install 步骤已经通过 --config.minimum-release-age=0 完成验证
+          PNPM_ENABLE_DEPENDENCY_STATUS_CHECK: false
         run: |
           PUBLISH_TAG="latest"
           PUBLISH_DIR="."
